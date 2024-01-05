@@ -1,0 +1,57 @@
+version: v1.0
+name: Android
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu2004
+blocks:
+  - name: Gradle
+    task:
+      jobs:
+        - name: Build
+          commands:
+            - checkout
+            - sem-version java 1.8
+            - ./gradlew build
+        - name: 'Job #1'
+          commands:
+            - on_pass
+          matrix:
+            - env_var: FOO
+              values:
+                - value1
+                - value2
+            - env_var: BAR
+              values:
+                - value1
+                - value2
+  - name: 'Block #2'
+    task:
+      env_vars:
+        - name: FOO_1
+          value: BAR_1
+      prologue:
+        commands:
+          - update init
+      epilogue:
+        always:
+          commands:
+            - '[Always on_pass]'
+        on_pass:
+          commands:
+            - '[exit on_fail]'
+        on_fail:
+          commands:
+            - '[retry Request]'
+      jobs:
+        - name: 'Job #2'
+          commands:
+            - post
+after_pipeline:
+  task:
+    jobs:
+      - name: 'Job #1'
+        commands: []
+promotions:
+  - name: Promotion 1
+    pipeline_file: pipeline_2.yml
